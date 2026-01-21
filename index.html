@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quick Bites Stall</title>
+
+<!-- PWA Meta -->
+<meta name="theme-color" content="#ffd36e">
+<link rel="icon" href="data:image/png;base64,iVBORw0KGgo=">
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f2f2f2;
+}
+
+.header {
+  background: #ffd36e;
+  padding: 30px 16px;
+  text-align: center;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 32px;
+}
+
+.header p {
+  margin-top: 10px;
+  font-size: 18px;
+}
+
+.card {
+  background: #fff;
+  max-width: 420px;
+  margin: -30px auto 20px;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+.item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.item-name {
+  font-size: 18px;
+}
+
+.item-price {
+  font-weight: bold;
+  margin-top: 6px;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  font-size: 20px;
+  color: #fff;
+  cursor: pointer;
+}
+
+.minus { background: #e63946; }
+.plus { background: #2ecc71; }
+
+.count {
+  font-size: 18px;
+  min-width: 24px;
+  text-align: center;
+}
+
+.actions {
+  text-align: center;
+  margin-top: 30px;
+}
+
+.download {
+  background: #1e88e5;
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 10px;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  margin-bottom: 12px;
+}
+
+.reset {
+  background: #7a7a7a;
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 10px;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <h1>Quick Bites Stall</h1>
+  <p id="date"></p>
+</div>
+
+<div class="card" id="menu"></div>
+
+<script>
+/* ---------------- DATA ---------------- */
+const items = [
+  { name: "Momos", price: 50, qty: 31 },
+  { name: "Potato Spiral", price: 50, qty: 29 },
+  { name: "Spiral with Cheese", price: 60, qty: 3 },
+  { name: "Cold Coffee", price: 40, qty: 3 },
+  { name: "Iced Coffee", price: 50, qty: 3 },
+  { name: "Water", price: 10, qty: 4 }
+];
+
+const menu = document.getElementById("menu");
+
+/* ---------------- UI ---------------- */
+function render() {
+  menu.innerHTML = "";
+  let totalSales = 0;
+
+  items.forEach((item, index) => {
+    const total = item.price * item.qty;
+    totalSales += total;
+
+    menu.innerHTML += `
+      <div class="item">
+        <div>
+          <div class="item-name">${item.name} (₹${item.price})</div>
+          <div class="item-price">₹${total}</div>
+        </div>
+        <div class="controls">
+          <button class="btn minus" onclick="changeQty(${index}, -1)">−</button>
+          <div class="count">${item.qty}</div>
+          <button class="btn plus" onclick="changeQty(${index}, 1)">+</button>
+        </div>
+      </div>
+    `;
+  });
+
+  menu.innerHTML += `
+    <div class="actions">
+      <h3>Total Sales: ₹${totalSales}</h3>
+      <button class="download">Download PDF</button><br>
+      <button class="reset" onclick="resetToday()">Reset Today</button>
+    </div>
+  `;
+}
+
+function changeQty(i, d) {
+  items[i].qty = Math.max(0, items[i].qty + d);
+  render();
+}
+
+function resetToday() {
+  items.forEach(i => i.qty = 0);
+  render();
+}
+
+/* ---------------- DATE ---------------- */
+document.getElementById("date").textContent =
+  new Date().toLocaleDateString("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric"
+  });
+
+render();
+
+/* ---------------- PWA (INLINE) ---------------- */
+const manifest = {
+  name: "Quick Bites Stall",
+  short_name: "QuickBites",
+  start_url: ".",
+  display: "standalone",
+  background_color: "#ffd36e",
+  theme_color: "#ffd36e"
+};
+
+const blob = new Blob([JSON.stringify(manifest)], { type: "application/json" });
+const manifestURL = URL.createObjectURL(blob);
+
+const link = document.createElement("link");
+link.rel = "manifest";
+link.href = manifestURL;
+document.head.appendChild(link);
+
+if ("serviceWorker" in navigator) {
+  const swBlob = new Blob([`
+    self.addEventListener('fetch', e => {});
+  `], { type: "text/javascript" });
+
+  const swURL = URL.createObjectURL(swBlob);
+  navigator.serviceWorker.register(swURL);
+}
+</script>
+
+</body>
+</html>
