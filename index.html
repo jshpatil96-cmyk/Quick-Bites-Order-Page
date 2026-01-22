@@ -5,9 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Quick Bites Stall</title>
 
-<!-- PWA Meta -->
 <meta name="theme-color" content="#ffd36e">
-<link rel="icon" href="data:image/png;base64,iVBORw0KGgo=">
 
 <style>
 body {
@@ -120,19 +118,18 @@ body {
 <div class="card" id="menu"></div>
 
 <script>
-/* ---------------- DATA ---------------- */
+/* -------- PRODUCTS (ALL ZERO) -------- */
 const items = [
-  { name: "Momos", price: 50, qty: 31 },
-  { name: "Potato Spiral", price: 50, qty: 29 },
-  { name: "Spiral with Cheese", price: 60, qty: 3 },
-  { name: "Cold Coffee", price: 40, qty: 3 },
-  { name: "Iced Coffee", price: 50, qty: 3 },
-  { name: "Water", price: 10, qty: 4 }
+  { name: "Momos", price: 50, qty: 0 },
+  { name: "Potato Spiral", price: 50, qty: 0 },
+  { name: "Spiral with Cheese", price: 60, qty: 0 },
+  { name: "Cold Coffee", price: 40, qty: 0 },
+  { name: "Iced Coffee", price: 50, qty: 0 },
+  { name: "Water", price: 10, qty: 0 }
 ];
 
 const menu = document.getElementById("menu");
 
-/* ---------------- UI ---------------- */
 function render() {
   menu.innerHTML = "";
   let totalSales = 0;
@@ -175,7 +172,6 @@ function resetToday() {
   render();
 }
 
-/* ---------------- DATE ---------------- */
 document.getElementById("date").textContent =
   new Date().toLocaleDateString("en-GB", {
     weekday: "long",
@@ -186,7 +182,7 @@ document.getElementById("date").textContent =
 
 render();
 
-/* ---------------- PWA (INLINE) ---------------- */
+/* -------- PWA -------- */
 const manifest = {
   name: "Quick Bites Stall",
   short_name: "QuickBites",
@@ -197,20 +193,17 @@ const manifest = {
 };
 
 const blob = new Blob([JSON.stringify(manifest)], { type: "application/json" });
-const manifestURL = URL.createObjectURL(blob);
-
 const link = document.createElement("link");
 link.rel = "manifest";
-link.href = manifestURL;
+link.href = URL.createObjectURL(blob);
 document.head.appendChild(link);
 
 if ("serviceWorker" in navigator) {
-  const swBlob = new Blob([`
-    self.addEventListener('fetch', e => {});
-  `], { type: "text/javascript" });
-
-  const swURL = URL.createObjectURL(swBlob);
-  navigator.serviceWorker.register(swURL);
+  const swBlob = new Blob(
+    ["self.addEventListener('fetch', e => {});"],
+    { type: "text/javascript" }
+  );
+  navigator.serviceWorker.register(URL.createObjectURL(swBlob));
 }
 </script>
 
