@@ -118,17 +118,28 @@ body {
 <div class="card" id="menu"></div>
 
 <script>
-/* -------- PRODUCTS (ALL ZERO) -------- */
-const items = [
+/* -------- STORAGE KEY -------- */
+const STORAGE_KEY = "quick_bites_sales";
+
+/* -------- DEFAULT ITEMS -------- */
+const defaultItems = [
   { name: "Momos", price: 50, qty: 0 },
   { name: "Potato Spiral", price: 50, qty: 0 },
   { name: "Spiral with Cheese", price: 60, qty: 0 },
   { name: "Cold Coffee", price: 40, qty: 0 },
   { name: "Iced Coffee", price: 50, qty: 0 },
-  { name: "Water", price: 10, qty: 0 }
+  { name: "Water", price: 10, qty: 0 },
+  { name: "Parcel Charge", price: 10, qty: 0 }
 ];
 
+/* -------- LOAD SAVED DATA -------- */
+let items = JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaultItems;
+
 const menu = document.getElementById("menu");
+
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+}
 
 function render() {
   menu.innerHTML = "";
@@ -164,14 +175,18 @@ function render() {
 
 function changeQty(i, d) {
   items[i].qty = Math.max(0, items[i].qty + d);
+  saveData();
   render();
 }
 
 function resetToday() {
+  if (!confirm("Reset all quantities for today?")) return;
   items.forEach(i => i.qty = 0);
+  saveData();
   render();
 }
 
+/* -------- DATE -------- */
 document.getElementById("date").textContent =
   new Date().toLocaleDateString("en-GB", {
     weekday: "long",
