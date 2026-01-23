@@ -7,6 +7,9 @@
 
 <meta name="theme-color" content="#ffd36e">
 
+<!-- jsPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
 <style>
 body {
   margin: 0;
@@ -68,7 +71,6 @@ body {
   border-radius: 8px;
   font-size: 20px;
   color: #fff;
-  cursor: pointer;
 }
 
 .minus { background: #e63946; }
@@ -92,7 +94,6 @@ body {
   border-radius: 10px;
   border: none;
   font-size: 16px;
-  cursor: pointer;
   margin-bottom: 12px;
 }
 
@@ -103,7 +104,6 @@ body {
   border-radius: 10px;
   border: none;
   font-size: 16px;
-  cursor: pointer;
 }
 </style>
 </head>
@@ -118,10 +118,8 @@ body {
 <div class="card" id="menu"></div>
 
 <script>
-/* ---------- STORAGE ---------- */
 const STORAGE_KEY = "quick_bites_sales";
 
-/* ---------- DEFAULT ITEMS ---------- */
 const defaultItems = [
   { name: "Momos", price: 50, qty: 0 },
   { name: "Potato Spiral", price: 50, qty: 0 },
@@ -139,13 +137,12 @@ function saveData() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
 }
 
-/* ---------- RENDER ---------- */
 function render() {
   menu.innerHTML = "";
   let totalSales = 0;
 
-  items.forEach((item, index) => {
-    const total = item.price * item.qty;
+  items.forEach((item, i) => {
+    const total = item.qty * item.price;
     totalSales += total;
 
     menu.innerHTML += `
@@ -155,9 +152,9 @@ function render() {
           <div class="item-price">₹${total}</div>
         </div>
         <div class="controls">
-          <button class="btn minus" onclick="changeQty(${index}, -1)">−</button>
+          <button class="btn minus" onclick="changeQty(${i},-1)">−</button>
           <div class="count">${item.qty}</div>
-          <button class="btn plus" onclick="changeQty(${index}, 1)">+</button>
+          <button class="btn plus" onclick="changeQty(${i},1)">+</button>
         </div>
       </div>
     `;
@@ -166,7 +163,7 @@ function render() {
   menu.innerHTML += `
     <div class="actions">
       <h3>Total Sales: ₹${totalSales}</h3>
-      <button class="download" onclick="downloadReport()">Download Daily Report</button><br>
+      <button class="download" onclick="downloadPDF()">Download PDF</button><br>
       <button class="reset" onclick="resetToday()">Reset Today</button>
     </div>
   `;
@@ -179,69 +176,52 @@ function changeQty(i, d) {
 }
 
 function resetToday() {
-  if (!confirm("Reset all quantities for today?")) return;
+  if (!confirm("Reset today's data?")) return;
   items.forEach(i => i.qty = 0);
   saveData();
   render();
 }
 
-/* ---------- DOWNLOAD REPORT (MOBILE FRIENDLY XLS) ---------- */
-function downloadReport() {
-  let grandTotal = 0;
+/* ---------- PDF DOWNLOAD ---------- */
+function downloadPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
 
-  let table = `
-    <table border="1">
-      <tr>
-        <th>Item</th>
-        <th>Qty</th>
-        <th>Price</th>
-        <th>Total</th>
-      </tr>
-  `;
+  let y = 20;
+  let total = 0;
+
+  doc.setFontSize(16);
+  doc.text("Quick Bites Stall - Daily Report", 20, y);
+  y += 10;
+
+  doc.setFontSize(12);
+  doc.text(`Date: ${new Date().toLocaleDateString("en-GB")}`, 20, y);
+  y += 10;
+
+  doc.text("Item        Qty   Price   Total", 20, y);
+  y += 6;
+  doc.line(20, y, 190, y);
+  y += 6;
 
   items.forEach(item => {
-    const total = item.qty * item.price;
-    grandTotal += total;
-    table += `
-      <tr>
-        <td>${item.name}</td>
-        <td>${item.qty}</td>
-        <td>${item.price}</td>
-        <td>${total}</td>
-      </tr>
-    `;
+    const rowTotal = item.qty * item.price;
+    total += rowTotal;
+    doc.text(
+      `${item.name}   ${item.qty}   ${item.price}   ${rowTotal}`,
+      20,
+      y
+    );
+    y += 7;
   });
 
-  table += `
-    <tr>
-      <td colspan="3"><strong>Grand Total</strong></td>
-      <td><strong>${grandTotal}</strong></td>
-    </tr>
-  </table>
-  `;
+  y += 5;
+  doc.line(20, y, 190, y);
+  y += 10;
 
-  const html = `
-    <html>
-      <head><meta charset="UTF-8"></head>
-      <body>
-        <h3>Quick Bites Stall – Daily Report</h3>
-        <p>Date: ${new Date().toLocaleDateString("en-GB")}</p>
-        ${table}
-      </body>
-    </html>
-  `;
+  doc.setFontSize(14);
+  doc.text(`Grand Total: ₹${total}`, 20, y);
 
-  const blob = new Blob([html], { type: "application/vnd.ms-excel" });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `QuickBites_Report_${new Date()
-    .toLocaleDateString("en-GB")
-    .replaceAll("/", "-")}.xls`;
-  a.click();
-
-  URL.revokeObjectURL(url);
+  doc.save(`QuickBites_${new Date().toLocaleDateString("en-GB").replaceAll("/","-")}.pdf`);
 }
 
 /* ---------- DATE ---------- */
