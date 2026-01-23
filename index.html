@@ -46,14 +46,8 @@ body {
   margin-bottom: 18px;
 }
 
-.item-name {
-  font-size: 18px;
-}
-
-.item-price {
-  font-weight: bold;
-  margin-top: 6px;
-}
+.item-name { font-size: 18px; }
+.item-price { font-weight: bold; margin-top: 6px; }
 
 .controls {
   display: flex;
@@ -118,10 +112,10 @@ body {
 <div class="card" id="menu"></div>
 
 <script>
-/* -------- STORAGE KEY -------- */
+/* ---------- STORAGE ---------- */
 const STORAGE_KEY = "quick_bites_sales";
 
-/* -------- DEFAULT ITEMS -------- */
+/* ---------- DEFAULT ITEMS ---------- */
 const defaultItems = [
   { name: "Momos", price: 50, qty: 0 },
   { name: "Potato Spiral", price: 50, qty: 0 },
@@ -132,15 +126,14 @@ const defaultItems = [
   { name: "Parcel Charge", price: 10, qty: 0 }
 ];
 
-/* -------- LOAD SAVED DATA -------- */
 let items = JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaultItems;
-
 const menu = document.getElementById("menu");
 
 function saveData() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
 }
 
+/* ---------- RENDER ---------- */
 function render() {
   menu.innerHTML = "";
   let totalSales = 0;
@@ -167,7 +160,7 @@ function render() {
   menu.innerHTML += `
     <div class="actions">
       <h3>Total Sales: ₹${totalSales}</h3>
-      <button class="download">Download PDF</button><br>
+      <button class="download" onclick="downloadReport()">Download Daily Report</button><br>
       <button class="reset" onclick="resetToday()">Reset Today</button>
     </div>
   `;
@@ -186,7 +179,32 @@ function resetToday() {
   render();
 }
 
-/* -------- DATE -------- */
+/* ---------- DOWNLOAD REPORT (CSV) ---------- */
+function downloadReport() {
+  let csv = "Item,Quantity,Price,Total\n";
+  let grandTotal = 0;
+
+  items.forEach(item => {
+    const total = item.price * item.qty;
+    grandTotal += total;
+    csv += `${item.name},${item.qty},${item.price},${total}\n`;
+  });
+
+  csv += `\nGrand Total,,,${grandTotal}`;
+
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  const today = new Date().toLocaleDateString("en-GB").replaceAll("/", "-");
+  a.href = url;
+  a.download = `QuickBites_Report_${today}.csv`;
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+
+/* ---------- DATE ---------- */
 document.getElementById("date").textContent =
   new Date().toLocaleDateString("en-GB", {
     weekday: "long",
@@ -197,7 +215,7 @@ document.getElementById("date").textContent =
 
 render();
 
-/* -------- PWA -------- */
+/* ---------- PWA ---------- */
 const manifest = {
   name: "Quick Bites Stall",
   short_name: "QuickBites",
