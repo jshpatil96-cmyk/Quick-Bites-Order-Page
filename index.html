@@ -2,7 +2,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Quick Bites Stall</title>  <!-- jsPDF for PDF download -->  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>  <style>
+  <title>Quick Bites Stall</title>  <!-- html2canvas for screenshot -->  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>  <style>
     body {
       margin: 0;
       font-family: Arial, Helvetica, sans-serif;
@@ -14,11 +14,6 @@
       padding: 30px 16px;
       text-align: center;
       color: #ffffff;
-    }
-
-    .header img {
-      width: 80px;
-      margin-bottom: 10px;
     }
 
     .header h1 {
@@ -93,7 +88,7 @@
       margin-bottom: 15px;
     }
 
-    .download {
+    .screenshot {
       background: #1565c0;
       color: #fff;
       padding: 12px 24px;
@@ -114,8 +109,7 @@
       cursor: pointer;
     }
   </style></head>
-<body>  <div class="header">
-    <img src="logo.png" alt="Quick Bites Logo" />
+<body>  <div class="header" id="captureArea">
     <h1>Quick Bites Stall</h1>
     <p id="date"></p>
   </div>  <div class="card" id="menu"></div>  <script>
@@ -132,13 +126,15 @@
     ];
 
     let stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
-let items;
-if (!stored) {
-  items = defaultItems.map(i => ({ ...i, qty: 0 }));
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-} else {
-  items = stored;
-}
+    let items;
+
+    if (!stored) {
+      items = defaultItems.map(i => ({ ...i, qty: 0 }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    } else {
+      items = stored;
+    }
+
     const menu = document.getElementById("menu");
 
     function saveData() {
@@ -171,7 +167,7 @@ if (!stored) {
       menu.innerHTML += `
         <div class="actions">
           <div class="total"><strong>Total Sales: ₹${totalSales}</strong></div>
-          <button class="download" onclick="downloadPDF()">Download PDF</button><br />
+          <button class="screenshot" onclick="takeScreenshot()">Take Screenshot</button><br />
           <button class="reset" onclick="resetToday()">Reset Today</button>
         </div>
       `;
@@ -190,33 +186,13 @@ if (!stored) {
       render();
     }
 
-    function downloadPDF() {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-
-      let y = 20;
-      let total = 0;
-
-      doc.setFontSize(16);
-      doc.text("Quick Bites Stall - Daily Report", 20, y);
-      y += 10;
-
-      doc.setFontSize(12);
-      doc.text(`Date: ${new Date().toLocaleDateString("en-GB")}`, 20, y);
-      y += 10;
-
-      items.forEach(item => {
-        const rowTotal = item.qty * item.price;
-        total += rowTotal;
-        doc.text(`${item.name}  |  Qty: ${item.qty}  |  ₹${rowTotal}`, 20, y);
-        y += 8;
+    function takeScreenshot() {
+      html2canvas(document.body).then(canvas => {
+        const link = document.createElement("a");
+        link.download = `QuickBites_${new Date().toLocaleDateString("en-GB").replaceAll("/","-")}.png`;
+        link.href = canvas.toDataURL();
+        link.click();
       });
-
-      y += 6;
-      doc.setFontSize(14);
-      doc.text(`Grand Total: ₹${total}`, 20, y);
-
-      doc.save(`QuickBites_${new Date().toLocaleDateString("en-GB").replaceAll("/","-")}.pdf`);
     }
 
     document.getElementById("date").textContent =
