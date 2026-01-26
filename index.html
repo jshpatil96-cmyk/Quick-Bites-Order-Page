@@ -136,7 +136,9 @@
     <p id="date"></p>
   </div>  <div class="card" id="menu"></div>  <script>
     const STORAGE_KEY = "quick_bites_data";
-    const DELETE_PIN = "1110"; // change your PIN here
+    const HISTORY_KEY = "quick_bites_history";
+    const DELETE_PIN = "1110"; // owner PIN
+    let ownerMode = false; // change your PIN here
 
     const defaultItems = [
       { name: "Momos", price: 50, qty: 0 },
@@ -162,11 +164,16 @@
       let totalSales = 0;
 
       menu.innerHTML += `
-        <div class="add-product">
-          <input id="newName" placeholder="Product name" />
-          <input id="newPrice" type="number" placeholder="Price" />
-          <button onclick="addProduct()">Add</button>
+        <div style="text-align:center;margin-bottom:12px;">
+          <button class="screenshot" onclick="toggleOwnerMode()">${ownerMode ? "Staff Mode" : "Owner Mode"}</button>
         </div>
+        ${ownerMode ? `
+        
+        ` : ``}
+      `;
+          <button class="screenshot" onclick="toggleOwnerMode()">${ownerMode ? "Exit Owner Mode" : "Enter Owner Mode"}</button>
+        </div>
+        
       `;
 
       items.forEach((item, index) => {
@@ -175,7 +182,8 @@
 
         menu.innerHTML += `
           <div class="item">
-            <div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              
               <div class="item-name">${item.name} (₹${item.price})</div>
               <div class="item-price">₹${total}</div>
             </div>
@@ -183,7 +191,7 @@
               <button class="btn minus" onclick="changeQty(${index}, -1)">−</button>
               <div class="count">${item.qty}</div>
               <button class="btn plus" onclick="changeQty(${index}, 1)">+</button>
-              <button class="btn delete" onclick="deleteProduct(${index})">✕</button>
+              
             </div>
           </div>
         `;
@@ -191,6 +199,9 @@
 
       menu.innerHTML += `
         <div class="actions">
+          ${ownerMode ? `<button class=\"screenshot\" onclick=\"viewHistory()\">View Daily History</button><br />` : ``}
+          
+          <button class="screenshot" onclick="viewHistory()">View Daily History</button><br />
           <div class="total"><strong>Total Sales: ₹${totalSales}</strong></div>
           <button class="screenshot" onclick="takeScreenshot()">Take Screenshot</button><br />
           <button class="reset" onclick="resetToday()">Reset Today</button>
@@ -213,7 +224,29 @@
       render();
     }
 
-    function deleteProduct(index) {
+    function toggleOwnerMode() {
+      if (!ownerMode) {
+        const pin = prompt("Enter Owner PIN:");
+        if (pin !== DELETE_PIN) return alert("Incorrect PIN");
+        ownerMode = true;
+      } else {
+        ownerMode = false; // Staff mode clicked
+      }
+      render();
+    }
+
+    function deleteProduct(index) {() {
+      if (!ownerMode) {
+        const pin = prompt("Enter Owner PIN:");
+        if (pin !== DELETE_PIN) return alert("Incorrect PIN");
+        ownerMode = true;
+      } else {
+        ownerMode = false;
+      }
+      render();
+    }
+
+    function deleteProduct(index) {(index) {
       const pin = prompt("Enter PIN to delete product:");
       if (pin !== DELETE_PIN) return alert("Incorrect PIN");
       if (!confirm(`Delete ${items[index].name}?`)) return;
@@ -222,14 +255,93 @@
       render();
     }
 
+    function saveTodayHistory() {
+      const history = JSON.parse(localStorage.getItem(HISTORY_KEY)) || {};
+      const today = new Date().toLocaleDateString("en-GB");
+      let total = 0;
+      items.forEach(i => total += i.price * i.qty);
+      history[today] = { items: JSON.parse(JSON.stringify(items)), total };
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    }
+
     function resetToday() {
+      saveTodayHistory();() {
       if (!confirm("Reset today's data?")) return;
       items.forEach(i => i.qty = 0);
       saveData();
       render();
     }
 
-    function takeScreenshot() {
+    function viewHistory() {
+      if (!ownerMode) {
+        alert("Owner Mode required to view history");
+        return;
+      }
+
+
+      const history = JSON.parse(localStorage.getItem(HISTORY_KEY)) || {};
+      let html = `
+        <div class="card" style="max-width:90%;">
+          <h2 style="text-align:center">Daily Sales History</h2>
+      `;
+
+      const dates = Object.keys(history).sort();
+      if (dates.length === 0) {
+        alert("No history yet");
+        return;
+      }
+
+      dates.forEach(date => {
+        const day = history[date];
+        html += `
+          <hr />
+          <h3>${date}</h3>
+          <table style="width:100%;border-collapse:collapse">
+            <tr>
+              <th align="left">Product</th>
+              <th align="right">Qty</th>
+              <th align="right">Amount</th>
+            </tr>
+        `;
+
+        day.items.forEach(i => {
+          if (i.qty > 0) {
+            html += `
+              <tr>
+                <td>${i.name}</td>
+                <td align="right">${i.qty}</td>
+                <td align="right">₹${i.qty * i.price}</td>
+              </tr>
+            `;
+          }
+        });
+
+        html += `
+          <tr>
+            <td colspan="2"><strong>Total</strong></td>
+            <td align="right"><strong>₹${day.total}</strong></td>
+          </tr>
+          </table>
+        `;
+      });
+
+      html += `<div style="text-align:center;margin-top:20px">
+        <button class="reset" onclick="render()">Close</button>
+      </div></div>`;
+
+      menu.innerHTML = html;
+    };
+      let msg = "Daily Sales History:
+
+";
+      Object.keys(history).sort().forEach(date => {
+        msg += `${date} → ₹${history[date].total}
+`;
+      });
+      alert(msg || "No history yet");
+    }
+
+    function takeScreenshot() {() {
       html2canvas(document.body).then(canvas => {
         const link = document.createElement("a");
         link.download = `QuickBites_${new Date().toLocaleDateString("en-GB").replaceAll("/","-")}.png`;
