@@ -2,7 +2,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Quick Bites Stall</title>  <!-- html2canvas for screenshot -->  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>  <style>
+  <title>Quick Bites Stall</title>  <!-- Screenshot library -->  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>  <style>
     body {
       margin: 0;
       font-family: Arial, Helvetica, sans-serif;
@@ -56,7 +56,7 @@
     .controls {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
     .btn {
@@ -71,11 +71,33 @@
 
     .minus { background: #e53935; }
     .plus { background: #2e7d32; }
+    .delete { background: #424242; }
 
     .count {
       font-size: 18px;
       min-width: 24px;
       text-align: center;
+    }
+
+    .add-product {
+      margin-bottom: 20px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .add-product input {
+      flex: 1;
+      padding: 8px;
+      font-size: 14px;
+    }
+
+    .add-product button {
+      padding: 8px 12px;
+      background: #1565c0;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
     }
 
     .actions {
@@ -109,11 +131,12 @@
       cursor: pointer;
     }
   </style></head>
-<body>  <div class="header" id="captureArea">
+<body>  <div class="header">
     <h1>Quick Bites Stall</h1>
     <p id="date"></p>
   </div>  <div class="card" id="menu"></div>  <script>
     const STORAGE_KEY = "quick_bites_data";
+    const DELETE_PIN = "1110"; // change your PIN here
 
     const defaultItems = [
       { name: "Momos", price: 50, qty: 0 },
@@ -125,15 +148,8 @@
       { name: "Parcel Charge", price: 10, qty: 0 }
     ];
 
-    let stored = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    let items;
-
-    if (!stored) {
-      items = defaultItems.map(i => ({ ...i, qty: 0 }));
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-    } else {
-      items = stored;
-    }
+    let items = JSON.parse(localStorage.getItem(STORAGE_KEY))
+      || defaultItems.map(i => ({ ...i, qty: 0 }));
 
     const menu = document.getElementById("menu");
 
@@ -144,6 +160,14 @@
     function render() {
       menu.innerHTML = "";
       let totalSales = 0;
+
+      menu.innerHTML += `
+        <div class="add-product">
+          <input id="newName" placeholder="Product name" />
+          <input id="newPrice" type="number" placeholder="Price" />
+          <button onclick="addProduct()">Add</button>
+        </div>
+      `;
 
       items.forEach((item, index) => {
         const total = item.price * item.qty;
@@ -159,6 +183,7 @@
               <button class="btn minus" onclick="changeQty(${index}, -1)">−</button>
               <div class="count">${item.qty}</div>
               <button class="btn plus" onclick="changeQty(${index}, 1)">+</button>
+              <button class="btn delete" onclick="deleteProduct(${index})">✕</button>
             </div>
           </div>
         `;
@@ -175,6 +200,24 @@
 
     function changeQty(index, delta) {
       items[index].qty = Math.max(0, items[index].qty + delta);
+      saveData();
+      render();
+    }
+
+    function addProduct() {
+      const name = document.getElementById("newName").value.trim();
+      const price = Number(document.getElementById("newPrice").value);
+      if (!name || price <= 0) return alert("Enter valid product and price");
+      items.push({ name, price, qty: 0 });
+      saveData();
+      render();
+    }
+
+    function deleteProduct(index) {
+      const pin = prompt("Enter PIN to delete product:");
+      if (pin !== DELETE_PIN) return alert("Incorrect PIN");
+      if (!confirm(`Delete ${items[index].name}?`)) return;
+      items.splice(index, 1);
       saveData();
       render();
     }
