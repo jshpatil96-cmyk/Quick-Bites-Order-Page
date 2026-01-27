@@ -1,252 +1,296 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Daily Sales</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quick Bites Stall</title>
 
-<style>
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #b30000;
-  color: white;
-}
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
-header {
-  padding: 15px;
-  text-align: center;
-  font-size: 22px;
-  font-weight: bold;
-  border-bottom: 2px solid #fff;
-}
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #c62828;
+    }
 
-.container {
-  padding: 15px;
-}
+    .header {
+      background: #c62828;
+      padding: 30px 16px;
+      text-align: center;
+      color: #ffffff;
+    }
 
-.product {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: rgba(255,255,255,0.1);
-  padding: 10px;
-  margin-bottom: 10px;
-  border-radius: 6px;
-}
+    .header h1 { margin: 0; font-size: 32px; }
+    .header p { margin-top: 10px; font-size: 18px; }
 
-.product-name {
-  flex: 1;
-}
+    .card {
+      background: #ffffff;
+      color: #000000;
+      max-width: 420px;
+      margin: -30px auto 20px;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
 
-.controls button {
-  padding: 6px 10px;
-  font-size: 16px;
-  margin: 0 4px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
+    .item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+    }
 
-button {
-  background: white;
-  color: #b30000;
-}
+    .left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
 
-.delete-btn {
-  margin-right: 8px;
-  display: none;
-}
+    .item-name { font-size: 18px; }
+    .item-price { font-weight: bold; margin-top: 6px; }
 
-.owner .delete-btn {
-  display: inline-block;
-}
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
 
-.footer button {
-  width: 100%;
-  margin-top: 10px;
-  padding: 10px;
-  font-size: 16px;
-}
+    .btn {
+      width: 34px;
+      height: 34px;
+      border: none;
+      border-radius: 8px;
+      font-size: 18px;
+      color: #fff;
+      cursor: pointer;
+    }
 
-.hidden {
-  display: none;
-}
+    .minus { background: #e53935; }
+    .plus { background: #2e7d32; }
+    .delete { background: #424242; }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 10px;
-}
+    .count { font-size: 18px; min-width: 24px; text-align: center; }
 
-th, td {
-  border: 1px solid white;
-  padding: 6px;
-  text-align: center;
-}
-</style>
+    .add-product {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .add-product input {
+      flex: 1;
+      padding: 8px;
+    }
+
+    .add-product button {
+      background: #1565c0;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 12px;
+    }
+
+    .actions { text-align: center; margin-top: 20px; }
+    .total { font-size: 20px; margin-bottom: 12px; }
+
+    .screenshot {
+      background: #1565c0;
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 10px;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+
+    .reset {
+      background: #616161;
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 10px;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
 </head>
-
 <body>
 
-<header>Daily Sale Summary</header>
-
-<div class="container" id="app">
-
-  <div id="productList"></div>
-
-  <div class="product">
-    <div class="product-name">Parcel Charge</div>
-    <div class="controls">
-      <button onclick="parcel(-10)">-</button>
-      <span id="parcelAmount">0</span>
-      <button onclick="parcel(10)">+</button>
-    </div>
+  <div class="header">
+    <h1>Quick Bites Stall</h1>
+    <p id="date"></p>
   </div>
 
-  <h3>Total: ₹<span id="total">0</span></h3>
+  <div class="card" id="menu"></div>
 
-  <div class="footer">
-    <button onclick="saveDay()">Save Today</button>
-    <button onclick="takeScreenshot()">Take Screenshot</button>
-    <button onclick="toggleOwner()">Owner Mode</button>
-    <button onclick="exitOwner()">Staff Mode</button>
-    <button onclick="viewHistory()">View Daily History</button>
-  </div>
+  <script>
+    const STORAGE_KEY = "quick_bites_data";
+    const HISTORY_KEY = "quick_bites_history";
+    const OWNER_PIN = "1234";
 
-  <div id="history" class="hidden"></div>
+    let ownerMode = false;
 
-</div>
+    const defaultItems = [
+      { name: "Momos", price: 50, qty: 0 },
+      { name: "Potato Spiral", price: 50, qty: 0 },
+      { name: "Spiral with Cheese", price: 60, qty: 0 },
+      { name: "Cold Coffee", price: 40, qty: 0 },
+      { name: "Iced Coffee", price: 50, qty: 0 },
+      { name: "Water", price: 10, qty: 0 },
+      { name: "Parcel Charge", price: 10, qty: 0 }
+    ];
 
-<script>
-const OWNER_PIN = "1234";
-let ownerMode = false;
+    let items = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (!items) {
+      items = defaultItems.map(i => ({ ...i, qty: 0 }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    }
 
-let products = JSON.parse(localStorage.getItem("products")) || [
-  { name: "Tea", price: 10, qty: 0 },
-  { name: "Coffee", price: 15, qty: 0 }
-];
+    const menu = document.getElementById("menu");
 
-let parcelCharge = Number(localStorage.getItem("parcel")) || 0;
-let history = JSON.parse(localStorage.getItem("history")) || {};
+    function saveData() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    }
 
-function render() {
-  const list = document.getElementById("productList");
-  list.innerHTML = "";
+    function toggleOwnerMode() {
+      if (!ownerMode) {
+        const pin = prompt("Enter Owner PIN:");
+        if (pin !== OWNER_PIN) return alert("Wrong PIN");
+        ownerMode = true;
+      } else {
+        ownerMode = false;
+      }
+      render();
+    }
 
-  products.forEach((p, i) => {
-    list.innerHTML += `
-      <div class="product">
-        <div class="product-name">
-          <button class="delete-btn" onclick="deleteProduct(${i})">❌</button>
-          ${p.name}
+    function render() {
+      menu.innerHTML = "";
+      let totalSales = 0;
+
+      menu.innerHTML += `
+        <div style="text-align:center;margin-bottom:12px">
+          <button class="screenshot" onclick="toggleOwnerMode()">${ownerMode ? "Staff Mode" : "Owner Mode"}</button>
         </div>
-        <div class="controls">
-          <button onclick="qty(${i},-1)">-</button>
-          ${p.qty}
-          <button onclick="qty(${i},1)">+</button>
+      `;
+
+      if (ownerMode) {
+        menu.innerHTML += `
+          <div class="add-product">
+            <input id="newName" placeholder="Product name" />
+            <input id="newPrice" type="number" placeholder="Price" />
+            <button onclick="addProduct()">Add</button>
+          </div>
+        `;
+      }
+
+      items.forEach((item, index) => {
+        const amount = item.price * item.qty;
+        totalSales += amount;
+
+        menu.innerHTML += `
+          <div class="item">
+            <div class="left">
+              ${ownerMode ? `<button class=\"btn delete\" onclick=\"deleteProduct(${index})\">✕</button>` : ``}
+              <div>
+                <div class="item-name">${item.name} (₹${item.price})</div>
+                <div class="item-price">₹${amount}</div>
+              </div>
+            </div>
+            <div class="controls">
+              <button class="btn minus" onclick="changeQty(${index}, -1)">−</button>
+              <div class="count">${item.qty}</div>
+              <button class="btn plus" onclick="changeQty(${index}, 1)">+</button>
+            </div>
+          </div>
+        `;
+      });
+
+      menu.innerHTML += `
+        <div class="actions">
+          <div class="total"><strong>Total Sales: ₹${totalSales}</strong></div>
+          ${ownerMode ? `<button class=\"screenshot\" onclick=\"viewHistory()\">View Daily History</button><br/>` : ``}
+          <button class="screenshot" onclick="takeScreenshot()">Take Screenshot</button><br />
+          <button class="reset" onclick="resetToday()">Reset Today</button>
         </div>
-      </div>`;
-  });
+      `;
+    }
 
-  document.getElementById("parcelAmount").innerText = parcelCharge;
-  document.getElementById("total").innerText = total();
-  document.getElementById("app").className = ownerMode ? "owner" : "";
-}
+    function changeQty(index, delta) {
+      items[index].qty = Math.max(0, items[index].qty + delta);
+      saveData();
+      render();
+    }
 
-function qty(i, v) {
-  products[i].qty = Math.max(0, products[i].qty + v);
-  save();
-}
+    function addProduct() {
+      const name = document.getElementById("newName").value.trim();
+      const price = Number(document.getElementById("newPrice").value);
+      if (!name || price <= 0) return alert("Invalid product");
+      items.push({ name, price, qty: 0 });
+      saveData();
+      render();
+    }
 
-function parcel(v) {
-  parcelCharge = Math.max(0, parcelCharge + v);
-  save();
-}
+    function deleteProduct(index) {
+      if (!confirm(`Delete ${items[index].name}?`)) return;
+      items.splice(index, 1);
+      saveData();
+      render();
+    }
 
-function total() {
-  return products.reduce((s,p)=>s+p.qty*p.price,0) + parcelCharge;
-}
+    function saveTodayHistory() {
+      const history = JSON.parse(localStorage.getItem(HISTORY_KEY)) || {};
+      const date = new Date().toLocaleDateString("en-GB");
+      let total = 0;
+      items.forEach(i => total += i.price * i.qty);
+      history[date] = { items: JSON.parse(JSON.stringify(items)), total };
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    }
 
-function save() {
-  localStorage.setItem("products", JSON.stringify(products));
-  localStorage.setItem("parcel", parcelCharge);
-  render();
-}
+    function resetToday() {
+      if (!confirm("Reset today's data?")) return;
+      saveTodayHistory();
+      items.forEach(i => i.qty = 0);
+      saveData();
+      render();
+    }
 
-function toggleOwner() {
-  const pin = prompt("Enter Owner PIN");
-  if (pin === OWNER_PIN) {
-    ownerMode = true;
-    alert("Owner Mode Enabled");
-    addProductOption();
-  } else {
-    alert("Wrong PIN");
-  }
-  render();
-}
+    function viewHistory() {
+      if (!ownerMode) return alert("Owner Mode required");
+      const history = JSON.parse(localStorage.getItem(HISTORY_KEY)) || {};
+      let html = `<h3 style=\"text-align:center\">Daily History</h3>`;
 
-function exitOwner() {
-  ownerMode = false;
-  render();
-}
+      Object.keys(history).sort().forEach(date => {
+        const day = history[date];
+        html += `<hr><strong>${date}</strong><table style=\"width:100%\">`;
+        day.items.forEach(i => {
+          if (i.qty > 0) {
+            html += `<tr><td>${i.name}</td><td align=right>${i.qty}</td><td align=right>₹${i.qty * i.price}</td></tr>`;
+          }
+        });
+        html += `<tr><td colspan=2><strong>Total</strong></td><td align=right><strong>₹${day.total}</strong></td></tr></table>`;
+      });
 
-function addProductOption() {
-  const name = prompt("Product name?");
-  const price = Number(prompt("Price?"));
-  if (name && price) {
-    products.push({name, price, qty: 0});
-    save();
-  }
-}
+      html += `<div style=\"text-align:center;margin-top:20px\"><button class=\"reset\" onclick=\"render()\">Close</button></div>`;
+      menu.innerHTML = html;
+    }
 
-function deleteProduct(i) {
-  if (!ownerMode) return;
-  const pin = prompt("Enter PIN to delete");
-  if (pin === OWNER_PIN) {
-    products.splice(i,1);
-    save();
-  }
-}
+    function takeScreenshot() {
+      html2canvas(document.body).then(canvas => {
+        const link = document.createElement("a");
+        link.download = "QuickBites.png";
+        link.href = canvas.toDataURL();
+        link.click();
+      });
+    }
 
-function saveDay() {
-  const date = new Date().toLocaleDateString();
-  history[date] = {
-    products: JSON.parse(JSON.stringify(products)),
-    parcel: parcelCharge,
-    total: total()
-  };
-  localStorage.setItem("history", JSON.stringify(history));
-  alert("Saved");
-}
-
-function viewHistory() {
-  if (!ownerMode) {
-    alert("Owner Mode required");
-    return;
-  }
-
-  const div = document.getElementById("history");
-  div.classList.remove("hidden");
-  div.innerHTML = "";
-
-  for (let d in history) {
-    div.innerHTML += `<h3>${d}</h3><table>
-      <tr><th>Product</th><th>Qty</th><th>Amount</th></tr>`;
-    history[d].products.forEach(p=>{
-      div.innerHTML += `<tr><td>${p.name}</td><td>${p.qty}</td><td>${p.qty*p.price}</td></tr>`;
+    document.getElementById("date").textContent = new Date().toLocaleDateString("en-GB", {
+      weekday: "long", day: "numeric", month: "long", year: "numeric"
     });
-    div.innerHTML += `<tr><td colspan="2">Parcel</td><td>${history[d].parcel}</td></tr>
-      <tr><th colspan="2">Total</th><th>${history[d].total}</th></tr></table>`;
-  }
-}
 
-function takeScreenshot() {
-  alert("Use phone screenshot buttons");
-}
-
-render();
-</script>
+    render();
+  </script>
 
 </body>
 </html>
